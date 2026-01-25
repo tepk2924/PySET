@@ -10,30 +10,36 @@ class ColorEnum(IntEnum):
     PURPLE = 3
 
 class ShapeEnum(IntEnum):
-    OVAL = 1
-    DIAMOND = 2
-    WAVE = 3
+    SQUARE = 1
+    CIRCLE = 2
+    HEART = 3
 
-class FillEnum(IntEnum):
-    EMPTY = 1
-    HALF = 2
-    FULL = 3
+class PosEnum(IntEnum):
+    LEFT = 1
+    MID = 2
+    RIGHT = 3
 
 @dataclass(frozen=True)
 class SetCard:
     color: ColorEnum
     shape: ShapeEnum
     count: int
-    fill: FillEnum
+    pos: PosEnum
 
     def __str__(self):
-        return f"[{self.color}, {self.shape}, {self.count}, {self.fill}]"
+        return f"[{self.color}, {self.shape}, {self.count}, {self.pos}]"
     
     def __repr__(self):
-        return f"SetCard({self.color}, {self.shape}, {self.count}, {self.fill})"
+        return f"SetCard({self.color}, {self.shape}, {self.count}, {self.pos})"
+    
+    def __iter__(self):
+        yield self.color
+        yield self.shape
+        yield self.count
+        yield self.pos
 
 def is_set(c1: SetCard, c2: SetCard, c3: SetCard) -> bool:
-    for attr in ("color", "shape", "count", "fill"):
+    for attr in ("color", "shape", "count", "pos"):
         vals = {
             getattr(c1, attr),
             getattr(c2, attr),
@@ -45,11 +51,11 @@ def is_set(c1: SetCard, c2: SetCard, c3: SetCard) -> bool:
 
 def make_deck() -> list[SetCard]:
     deck = [
-        SetCard(c, s, n, f)
+        SetCard(c, s, n, p)
         for c in range(1, 4)
         for s in range(1, 4)
         for n in range(1, 4)
-        for f in range(1, 4)
+        for p in range(1, 4)
     ]
     random.shuffle(deck)
     return deck
@@ -128,6 +134,43 @@ async def quit_game(ctx:discord.commands.context.ApplicationContext):
     game = None
     await ctx.respond("게임을 그만합니다!")
 
+def get_board(board:list[SetCard]) -> list[str]:
+    n_rows = len(board)//3
+    n_char_rows = 4*n_rows - 1
+    chars = [[" " for _ in range(13)] for _ in range(n_char_rows)]
+    black_chardict = {ShapeEnum.CIRCLE: ":black_circle:",
+                      ShapeEnum.HEART: ":black_heart:",
+                      ShapeEnum.SQUARE: ":black_large_square:"}
+    chardict = {
+        (ColorEnum.RED   , ShapeEnum.SQUARE): ":red_square:",
+        (ColorEnum.RED   , ShapeEnum.CIRCLE): ":red_circle:",
+        (ColorEnum.RED   , ShapeEnum.HEART ): ":red_heart:",
+        (ColorEnum.GREEN , ShapeEnum.SQUARE): ":green_square:",
+        (ColorEnum.GREEN , ShapeEnum.CIRCLE): ":green_circle:",
+        (ColorEnum.GREEN , ShapeEnum.HEART ): ":green_heart:",
+        (ColorEnum.PURPLE, ShapeEnum.SQUARE): ":purple_square:",
+        (ColorEnum.PURPLE, ShapeEnum.CIRCLE): ":purple_circle:",
+        (ColorEnum.PURPLE, ShapeEnum.HEART ): ":purple_heart:",
+                }
+    for idx in range(n_char_rows):
+        if idx % 4 != 3:
+            chars[idx][0] = "."
+            chars[idx][4] = "  "
+            chars[idx][8] = "  "
+            chars[idx][12] = "."
+    for idx in range(len(board)):
+        R, C = divmod(idx, 3)
+        baser, basec = 4*R, 4*C + 1
+        color, shape, count, pos = board[idx]
+        black_char = black_chardict[shape]
+        char = chardict[(color, shape)]
+        for jdx in range(3):
+            for kdx in range(3):
+                chars[baser + jdx][basec + kdx] = black_char
+        for jdx in range(count):
+            chars[baser + jdx][basec + pos - 1] = char
+    return ["".join(line) for line in chars]
+
 @bot.slash_command()
 async def try_set(ctx:discord.commands.context.ApplicationContext,
               first,
@@ -160,6 +203,8 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
         if success:
             score_board[author] += 1
             sending_txts.append(f"Set이 맞습니다! {author} 1점 득점!")
+            sending_txts.append(f"현재 보드 : ")
+            sending_txts += get_board(game.board)
         else:
             score_board[author] -= 1
             sending_txts.append(f"Set이 아닙니다! {author} 1점 감점!")
@@ -193,7 +238,7 @@ async def board(ctx:discord.commands.context.ApplicationContext):
     else:
         sending_txts = []
         sending_txts.append("현재 보드 : ")
-        sending_txts.append(f"{game.board}")
+        sending_txts += get_board(game.board)
         sending_txts.append(f"덱에 남은 장수 : {len(game.deck)}")
         await ctx.respond("\n".join(sending_txts))
 
