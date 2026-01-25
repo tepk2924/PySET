@@ -136,11 +136,8 @@ async def quit_game(ctx:discord.commands.context.ApplicationContext):
 
 def get_board(board:list[SetCard]) -> list[str]:
     n_rows = len(board)//3
-    n_char_rows = 4*n_rows - 1
+    n_char_rows = 4*n_rows
     chars = [[" " for _ in range(13)] for _ in range(n_char_rows)]
-    black_chardict = {ShapeEnum.CIRCLE: ":black_circle:",
-                      ShapeEnum.HEART: ":black_heart:",
-                      ShapeEnum.SQUARE: ":black_large_square:"}
     chardict = {
         (ColorEnum.RED   , ShapeEnum.SQUARE): ":red_square:",
         (ColorEnum.RED   , ShapeEnum.CIRCLE): ":red_circle:",
@@ -155,18 +152,23 @@ def get_board(board:list[SetCard]) -> list[str]:
     for idx in range(n_char_rows):
         if idx % 4 != 3:
             chars[idx][0] = "."
-            chars[idx][4] = "  "
-            chars[idx][8] = "  "
+            chars[idx][4] = "//"
+            chars[idx][8] = "//"
             chars[idx][12] = "."
+        else:
+            K = 3*(idx - 3)//4
+            if K + 1 < 10:
+                chars[idx] = f"         [{K + 1}]               [{K + 2}]                [{K + 3}]"
+            else:
+                chars[idx] = f"       [{K + 1}]              [{K + 2}]               [{K + 3}]"
     for idx in range(len(board)):
         R, C = divmod(idx, 3)
         baser, basec = 4*R, 4*C + 1
         color, shape, count, pos = board[idx]
-        black_char = black_chardict[shape]
         char = chardict[(color, shape)]
         for jdx in range(3):
             for kdx in range(3):
-                chars[baser + jdx][basec + kdx] = black_char
+                chars[baser + jdx][basec + kdx] = "      "
         for jdx in range(count):
             chars[baser + jdx][basec + pos - 1] = char
     return ["".join(line) for line in chars]
@@ -197,7 +199,7 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
     else:
         success = game.try_claim(first, second, third)
         sending_txts = []
-        author = str(ctx.author)
+        author = str(ctx.author).split("(")[0][:-1]
         if author not in score_board:
             score_board[author] = 0
         if success:
@@ -241,5 +243,52 @@ async def board(ctx:discord.commands.context.ApplicationContext):
         sending_txts += get_board(game.board)
         sending_txts.append(f"덱에 남은 장수 : {len(game.deck)}")
         await ctx.respond("\n".join(sending_txts))
+
+@bot.slash_command()
+async def what_is_set(ctx:discord.commands.context.ApplicationContext):
+    sending_txts = [
+        "SET 게임은 81장의 카드가 모두 소진될 때 까지 가장 많은 set를 이루는 카드를 가져가는 사람이 이기는 게임.",
+        "카드는 4가지 속성이 존재함: 모양(네모, 동그라미, 하트), 개수(1개, 2개, 3개), 위치(좌, 중, 우), 그리고 색깔(보라, 초록, 빨강)",
+        "3개의 카드를 고를 때, 4가지의 속성 각각 전부 다르거나, 전부 같으면 그 3개의 카드는 set를 이룬다고 함.",
+        "예시를 보고 싶으면 /example"
+    ]
+    await ctx.respond("\n".join(sending_txts))
+
+@bot.slash_command()
+async def example(ctx:discord.commands.context.ApplicationContext):
+    sending_txts = [
+        "아래 예시는 set임.",
+        ".      :green_circle:      //:red_circle:            //            :purple_circle:.",
+        ".      :green_circle:      //:red_circle:            //                  .",
+        ".      :green_circle:      //                  //                  .",
+        "모양은 전부 같고, 개수는 전부 다르고, 위치는 전부 다르고, 색깔은 전부 다르기 때문.",
+        "",
+        "아래 예시는 set임.",
+        ".      :green_heart:      //      :red_circle:      //      :purple_square:      .",
+        ".      :green_heart:      //                  //      :purple_square:      .",
+        ".      :green_heart:      //                  //                  .",
+        "모양은 전부 다르고, 개수는 전부 다르고, 위치는 전부 같고, 색깔은 전부 다르기 때문.",
+        "",
+        "아래 예시는 set가 아님.",
+        ".:red_heart:            //:red_heart:             //      :red_heart:      .",
+        ".:red_heart:            //                   //      :red_heart:      .",
+        ".:red_heart:            //                   //                  .",
+        "모양은 전부 같고, 개수는 전부 다르고, 색깔은 전부 같지만, 위치는 왼쪽에 있는 거 2개, 가운데에 있는 거 1개라서 set가 아님. ",
+        "",
+        "그러니까, 어느 한 속성이라도 1:2로 나뉘는 게 있으면 set가 아님."
+    ]
+    await ctx.respond("\n".join(sending_txts))
+
+@bot.slash_command()
+async def help(ctx:discord.commands.context.ApplicationContext):
+    sending_txts = [
+        "/board : 현재 보드의 상태 확인",
+        "/try_set A B C : A, B, C번째 카드를 선택. (A, B, C는 자연수) set이면 1점 득점, 아니면 1점 감점",
+        "/start_game : 새 SET 게임을 시작",
+        "/score : 현재 획득한 점수 확인",
+        "/quit_game : 현재 게임을 그만두기",
+        "/what_is_set : SET가 뭔지 설명받기"
+    ]
+    await ctx.respond("\n".join(sending_txts))
 
 bot.run(APIkey)
