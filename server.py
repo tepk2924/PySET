@@ -9,7 +9,7 @@ client_sockets = []
 
 ## Server IP and Port ##
 
-HOST = socket.gethostbyname(socket.gethostname())
+HOST = "0.0.0.0"
 PORT = 9999
 
 game = GameState()
