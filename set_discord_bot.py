@@ -117,6 +117,7 @@ score_board_dict:dict[int, dict[str, int]] = {}
 
 @bot.slash_command()
 async def new_game(ctx:discord.commands.context.ApplicationContext):
+    print(f"new game command by {ctx.author.name} from guild {ctx.guild_id}")
     global is_game_going_dict
     global game_dict
     global score_board_dict
@@ -134,6 +135,7 @@ async def new_game(ctx:discord.commands.context.ApplicationContext):
 
 @bot.slash_command()
 async def quit_game(ctx:discord.commands.context.ApplicationContext):
+    print(f"quit game command by {ctx.author.name} from guild {ctx.guild_id}")
     global is_game_going_dict
     global game_dict
     global score_board_dict
@@ -189,6 +191,7 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
                   first:str,
                   second:str,
                   third:str):
+    print(f"try set {first} {second} {third} command by {ctx.author.name} from guild {ctx.guild_id}")
     global is_game_going_dict
     global game_dict
     global score_board_dict
@@ -208,7 +211,7 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
     except:
         value_error_handle = True
     if not is_game_going:
-        await ctx.respond("먼저 Set 게임을 시작하세요.")
+        await ctx.respond("먼저 SET 게임을 시작하세요. (/new_game 커맨드)")
     elif value_error_handle:
         await ctx.respond("숫자 값 3개를 입력하세요.")
     elif first == second or second == third or third == first:
@@ -246,6 +249,7 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
 
 @bot.slash_command()
 async def score(ctx:discord.commands.context.ApplicationContext):
+    print(f"score command by {ctx.author.name} from guild {ctx.guild_id}")
     global is_game_going_dict
     global score_board_dict
     guild_id = ctx.guild_id
@@ -256,7 +260,7 @@ async def score(ctx:discord.commands.context.ApplicationContext):
     is_game_going = is_game_going_dict[guild_id]
     score_board = score_board_dict[guild_id]
     if not is_game_going:
-        await ctx.respond("먼저 SET 게임을 시작하세요.")
+        await ctx.respond("먼저 SET 게임을 시작하세요. (/new_game 커맨드)")
     else:
         sending_txts = []
         sending_txts.append("스코어 : ")
@@ -265,6 +269,7 @@ async def score(ctx:discord.commands.context.ApplicationContext):
 
 @bot.slash_command()
 async def board(ctx:discord.commands.context.ApplicationContext):
+    print(f"board command by {ctx.author.name} from guild {ctx.guild_id}")
     global is_game_going_dict
     global game_dict
     guild_id = ctx.guild_id
@@ -275,7 +280,7 @@ async def board(ctx:discord.commands.context.ApplicationContext):
     is_game_going = is_game_going_dict[guild_id]
     game = game_dict[guild_id]
     if not is_game_going:
-        await ctx.respond("먼저 SET 게임을 시작하세요.")
+        await ctx.respond("먼저 SET 게임을 시작하세요. (/new_game 커맨드)")
     else:
         sending_txts = []
         sending_txts.append("현재 보드 : ")
@@ -284,7 +289,8 @@ async def board(ctx:discord.commands.context.ApplicationContext):
         await ctx.respond("\n".join(sending_txts))
 
 @bot.slash_command()
-async def what_is_set(ctx:discord.commands.context.ApplicationContext):
+async def what_is_set(ctx:discord.commands.context.ApplicationContext):    
+    print(f"what_is_set command by {ctx.author.name} from guild {ctx.guild_id}")
     sending_txts = [
         "SET 게임은 81장의 카드가 모두 소진될 때 까지 가장 많은 set를 이루는 카드를 가져가는 사람이 이기는 게임.",
         "카드는 4가지 속성이 존재함: 모양(네모, 동그라미, 하트), 개수(1개, 2개, 3개), 위치(좌, 중, 우), 그리고 색깔(보라, 초록, 빨강)",
@@ -295,6 +301,7 @@ async def what_is_set(ctx:discord.commands.context.ApplicationContext):
 
 @bot.slash_command()
 async def example(ctx:discord.commands.context.ApplicationContext):
+    print(f"example command by {ctx.author.name} from guild {ctx.guild_id}")
     sending_txts = [
         "아래 예시는 set임.",
         ".      :green_circle:      //:red_circle:            //            :purple_circle:.",
@@ -320,6 +327,7 @@ async def example(ctx:discord.commands.context.ApplicationContext):
 
 @bot.slash_command()
 async def help(ctx:discord.commands.context.ApplicationContext):
+    print(f"help command by {ctx.author.name} from guild {ctx.guild_id}")
     sending_txts = [
         "/new_game : 새 SET 게임을 시작",
         "/board : 현재 보드의 상태 확인",
