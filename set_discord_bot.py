@@ -79,6 +79,7 @@ class GameState:
         while not self.is_set_exist():
             if len(self.deck) < 3:
                 self.game_over = True
+                break
             self.deal(3)
 
     def deal(self, n: int):
@@ -122,7 +123,12 @@ async def new_game(ctx:discord.commands.context.ApplicationContext):
     score_board = {}
     is_game_going = True
     game = GameState()
-    await ctx.respond("새 게임을 시작합니다!")
+    sending_txts = []
+    sending_txts.append("새 게임을 시작합니다!")
+    sending_txts.append(f"현재 보드 : ")
+    sending_txts += get_board(game.board)
+    sending_txts.append(f"덱에 남은 장수 : {len(game.deck)}")
+    await ctx.respond("\n".join(sending_txts))
 
 @bot.slash_command()
 async def quit_game(ctx:discord.commands.context.ApplicationContext):
@@ -136,7 +142,7 @@ async def quit_game(ctx:discord.commands.context.ApplicationContext):
 
 def get_board(board:list[SetCard]) -> list[str]:
     n_rows = len(board)//3
-    n_char_rows = 4*n_rows
+    n_char_rows = 5*n_rows
     chars = [[" " for _ in range(13)] for _ in range(n_char_rows)]
     chardict = {
         (ColorEnum.RED   , ShapeEnum.SQUARE): ":red_square:",
@@ -150,20 +156,22 @@ def get_board(board:list[SetCard]) -> list[str]:
         (ColorEnum.PURPLE, ShapeEnum.HEART ): ":purple_heart:",
                 }
     for idx in range(n_char_rows):
-        if idx % 4 != 3:
-            chars[idx][0] = "."
-            chars[idx][4] = "//"
-            chars[idx][8] = "//"
-            chars[idx][12] = "."
-        else:
-            K = 3*(idx - 3)//4
+        if idx%5 == 3:
+            K = 3*(idx - 3)//5
             if K + 1 < 10:
                 chars[idx] = f"         [{K + 1}]               [{K + 2}]                [{K + 3}]"
             else:
                 chars[idx] = f"       [{K + 1}]              [{K + 2}]               [{K + 3}]"
+        elif idx%5 == 4:
+            chars[idx] = ""
+        else:
+            chars[idx][0] = "."
+            chars[idx][4] = "//"
+            chars[idx][8] = "//"
+            chars[idx][12] = "."
     for idx in range(len(board)):
         R, C = divmod(idx, 3)
-        baser, basec = 4*R, 4*C + 1
+        baser, basec = 5*R, 4*C + 1
         color, shape, count, pos = board[idx]
         char = chardict[(color, shape)]
         for jdx in range(3):
@@ -207,12 +215,13 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
             sending_txts.append(f"Set이 맞습니다! {author} 1점 득점!")
             sending_txts.append(f"현재 보드 : ")
             sending_txts += get_board(game.board)
+            sending_txts.append(f"덱에 남은 장수 : {len(game.deck)}")
         else:
             score_board[author] -= 1
             sending_txts.append(f"Set이 아닙니다! {author} 1점 감점!")
         if game.game_over:
             sending_txts.append(f"게임 끝!")
-            sending_txts.append(f"스코어 : ")
+            sending_txts.append(f"최종 스코어 : ")
             sending_txts.append(f"{score_board}")
             is_game_going = False
             game = None
@@ -224,7 +233,7 @@ async def score(ctx:discord.commands.context.ApplicationContext):
     global is_game_going
     global score_board
     if not is_game_going:
-        await ctx.respond("먼저 Set 게임을 시작하세요.")
+        await ctx.respond("먼저 SET 게임을 시작하세요.")
     else:
         sending_txts = []
         sending_txts.append("스코어 : ")
@@ -236,7 +245,7 @@ async def board(ctx:discord.commands.context.ApplicationContext):
     global is_game_going
     global game
     if not is_game_going:
-        await ctx.respond("먼저 Set 게임을 시작하세요.")
+        await ctx.respond("먼저 SET 게임을 시작하세요.")
     else:
         sending_txts = []
         sending_txts.append("현재 보드 : ")
@@ -282,9 +291,9 @@ async def example(ctx:discord.commands.context.ApplicationContext):
 @bot.slash_command()
 async def help(ctx:discord.commands.context.ApplicationContext):
     sending_txts = [
+        "/new_game : 새 SET 게임을 시작",
         "/board : 현재 보드의 상태 확인",
         "/try_set A B C : A, B, C번째 카드를 선택. (A, B, C는 자연수) set이면 1점 득점, 아니면 1점 감점",
-        "/start_game : 새 SET 게임을 시작",
         "/score : 현재 획득한 점수 확인",
         "/quit_game : 현재 게임을 그만두기",
         "/what_is_set : SET가 뭔지 설명받기"
