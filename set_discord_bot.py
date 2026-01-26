@@ -239,9 +239,9 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
             max_score = max(score_board.values())
             winners = [key for key in score_board if score_board[key] == max_score]
             sending_txts.append(f"{', '.join(winners)} {'공동 ' if len(winners) >= 2 else ''}승리!")
-            is_game_going = False
-            game = None
-            score_board = {}
+            is_game_going_dict[guild_id] = False
+            game_dict[guild_id] = None
+            score_board_dict[guild_id] = None
         await ctx.respond("\n".join(sending_txts))
 
 @bot.slash_command()
