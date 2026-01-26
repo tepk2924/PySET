@@ -111,18 +111,20 @@ with open("APIkey.txt", "r") as f:
 
 bot = discord.Bot()
 
-is_game_going:bool = False
-game:GameState = None
-score_board:dict = None
+is_game_going_dict:dict[int, bool] = {}
+game_dict:dict[int, GameState] = {}
+score_board_dict:dict[int, dict[str, int]] = {}
 
 @bot.slash_command()
 async def new_game(ctx:discord.commands.context.ApplicationContext):
-    global is_game_going
-    global game
-    global score_board
-    score_board = {}
-    is_game_going = True
+    global is_game_going_dict
+    global game_dict
+    global score_board_dict
+    guild_id = ctx.guild_id
+    is_game_going_dict[guild_id] = True
     game = GameState()
+    game_dict[guild_id] = game
+    score_board_dict[guild_id] = {}
     sending_txts = []
     sending_txts.append("=================새 게임을 시작합니다!=================")
     sending_txts.append(f"현재 보드 : ")
@@ -132,12 +134,13 @@ async def new_game(ctx:discord.commands.context.ApplicationContext):
 
 @bot.slash_command()
 async def quit_game(ctx:discord.commands.context.ApplicationContext):
-    global is_game_going
-    global game
-    global score_board
-    score_board = None
-    is_game_going = False
-    game = None
+    global is_game_going_dict
+    global game_dict
+    global score_board_dict
+    guild_id = ctx.guild_id
+    is_game_going_dict[guild_id] = False
+    game_dict[guild_id] = None
+    score_board_dict[guild_id] = None
     await ctx.respond("게임을 그만합니다!")
 
 def get_board(board:list[SetCard]) -> list[str]:
@@ -183,12 +186,20 @@ def get_board(board:list[SetCard]) -> list[str]:
 
 @bot.slash_command()
 async def try_set(ctx:discord.commands.context.ApplicationContext,
-              first,
-              second,
-              third):
-    global is_game_going
-    global game
-    global score_board
+                  first:str,
+                  second:str,
+                  third:str):
+    global is_game_going_dict
+    global game_dict
+    global score_board_dict
+    guild_id = ctx.guild_id
+    if guild_id not in is_game_going_dict:
+        is_game_going_dict[guild_id] = False
+        game_dict[guild_id] = None
+        score_board_dict[guild_id] = None
+    is_game_going = is_game_going_dict[guild_id]
+    game = game_dict[guild_id]
+    score_board = score_board_dict[guild_id]
     value_error_handle = False
     try:
         first = int(first)
@@ -196,29 +207,31 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
         third = int(third)
     except:
         value_error_handle = True
-    if value_error_handle:
-        await ctx.respond("서로 다른 숫자 값 3개를 입력하세요.")
-    elif not is_game_going:
+    if not is_game_going:
         await ctx.respond("먼저 Set 게임을 시작하세요.")
+    elif value_error_handle:
+        await ctx.respond("숫자 값 3개를 입력하세요.")
     elif first == second or second == third or third == first:
         await ctx.respond("모두 다른 카드를 선택해주세요.")
     elif first > len(game.board) or second > len(game.board) or third > len(game.board):
         await ctx.respond(f"현재 나와있는 카드의 수인 {len(game.board)} 이하의 수를 입력하세요.")
+    elif first <= 0 or second <= 0 or third <= 0:
+        await ctx.respond(f"1 이상의 자연수 세 개를 입력하세요.")
     else:
         success = game.try_claim(first, second, third)
         sending_txts = []
-        author = str(ctx.author).split("(")[1][:-1]
+        author = ctx.author.name
         if author not in score_board:
             score_board[author] = 0
         if success:
             score_board[author] += 1
-            sending_txts.append(f"Set이 맞습니다! {author} 1점 득점!")
+            sending_txts.append(f"Set가 맞습니다! {author} 1점 득점!")
             sending_txts.append(f"현재 보드 : ")
             sending_txts += get_board(game.board)
             sending_txts.append(f"덱에 남은 장수 : {len(game.deck)}")
         else:
             score_board[author] -= 1
-            sending_txts.append(f"Set이 아닙니다! {author} 1점 감점!")
+            sending_txts.append(f"Set가 아닙니다! {author} 1점 감점!")
         if game.game_over:
             sending_txts.append(f"=======================게임 끝!=======================")
             sending_txts.append(f"최종 스코어 : ")
@@ -233,8 +246,15 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
 
 @bot.slash_command()
 async def score(ctx:discord.commands.context.ApplicationContext):
-    global is_game_going
-    global score_board
+    global is_game_going_dict
+    global score_board_dict
+    guild_id = ctx.guild_id
+    if guild_id not in is_game_going_dict:
+        is_game_going_dict[guild_id] = False
+        game_dict[guild_id] = None
+        score_board_dict[guild_id] = None
+    is_game_going = is_game_going_dict[guild_id]
+    score_board = score_board_dict[guild_id]
     if not is_game_going:
         await ctx.respond("먼저 SET 게임을 시작하세요.")
     else:
@@ -245,8 +265,15 @@ async def score(ctx:discord.commands.context.ApplicationContext):
 
 @bot.slash_command()
 async def board(ctx:discord.commands.context.ApplicationContext):
-    global is_game_going
-    global game
+    global is_game_going_dict
+    global game_dict
+    guild_id = ctx.guild_id
+    if guild_id not in is_game_going_dict:
+        is_game_going_dict[guild_id] = False
+        game_dict[guild_id] = None
+        score_board_dict[guild_id] = None
+    is_game_going = is_game_going_dict[guild_id]
+    game = game_dict[guild_id]
     if not is_game_going:
         await ctx.respond("먼저 SET 게임을 시작하세요.")
     else:
