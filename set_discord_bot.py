@@ -124,7 +124,7 @@ async def new_game(ctx:discord.commands.context.ApplicationContext):
     is_game_going = True
     game = GameState()
     sending_txts = []
-    sending_txts.append("새 게임을 시작합니다!")
+    sending_txts.append("=================새 게임을 시작합니다!=================")
     sending_txts.append(f"현재 보드 : ")
     sending_txts += get_board(game.board)
     sending_txts.append(f"덱에 남은 장수 : {len(game.deck)}")
@@ -207,7 +207,7 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
     else:
         success = game.try_claim(first, second, third)
         sending_txts = []
-        author = str(ctx.author).split("(")[0][:-1]
+        author = str(ctx.author).split("(")[1][:-1]
         if author not in score_board:
             score_board[author] = 0
         if success:
@@ -220,9 +220,12 @@ async def try_set(ctx:discord.commands.context.ApplicationContext,
             score_board[author] -= 1
             sending_txts.append(f"Set이 아닙니다! {author} 1점 감점!")
         if game.game_over:
-            sending_txts.append(f"게임 끝!")
+            sending_txts.append(f"=======================게임 끝!=======================")
             sending_txts.append(f"최종 스코어 : ")
             sending_txts.append(f"{score_board}")
+            max_score = max(score_board.values())
+            winners = [key for key in score_board if score_board[key] == max_score]
+            sending_txts.append(f"{', '.join(winners)} {'공동 ' if len(winners) >= 2 else ''}승리!")
             is_game_going = False
             game = None
             score_board = {}
