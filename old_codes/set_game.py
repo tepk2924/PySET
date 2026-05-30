@@ -1,6 +1,6 @@
 from enum import IntEnum
 from dataclasses import dataclass
-from enums import *
+from old_codes.enums import *
 import itertools
 import random
 

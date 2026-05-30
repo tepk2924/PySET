@@ -3,7 +3,7 @@ import pygame
 import socket
 import threading
 import json
-from enums import *
+from old_codes.enums import *
 
 def handle_click(pos, cards):
     global selected_cards_indices
